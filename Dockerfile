@@ -1,43 +1,42 @@
 # Create this container with "docker build -t learningreact ."
+# Reference:  https://stackoverflow.com/questions/25899912/install-nvm-in-docker
 FROM ubuntu:17.10
 
-RUN apt-get update && apt-get install -y \
+# Replace shell with bash so we can source files
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+# Set debconf to run non-interactively
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+# Install package dependencies
+RUN apt-get update && apt-get install -y -q --no-install-recommends \
+    apt-transport-https \
     build-essential \
+    ca-certificates \
     curl \
-    emacs \
-    firefox \
     git \
     libssl-dev \
-    sudo \
-    xterm
+    python \
+    rsync \
+    software-properties-common \
+    wget \
+  && rm -rf /var/lib/apt/lists/*
 
-# Enable running X11 in container
-# See also http://fabiorehm.com/blog/2014/09/11/running-gui-apps-with-docker/
+ENV NVM_DIR /usr/local/nvm
+ENV NODE_VERSION v6.10.3
 
-# Replace 1000 with your user / group id
-RUN export uid=1000 gid=1000 && \
-    mkdir -p /home/dgreenbaum && \
-    echo "dgreenbaum:x:${uid}:${gid}:Dave Greenbaum,,,:/home/dgreenbaum:/bin/bash" >> /etc/passwd && \
-    echo "dgreenbaum:x:${uid}:" >> /etc/group && \
-    mkdir -p /etc/sudoers.d && \
-    echo "dgreenbaum ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/dgreenbaum && \
-    chmod 0440 /etc/sudoers.d/dgreenbaum && \
-    chown ${uid}:${gid} -R /home/dgreenbaum
+# Install nvm with node and npm
+RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.20.0/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default
 
-USER dgreenbaum
-ENV HOME /home/dgreenbaum
-
-# Install nvm (Node Version Manager)
-RUN cd /home/dgreenbaum && touch .profile && curl -sL https://raw.githubusercontent.com/creationix/nvm/v0.31.0/install.sh -o install_nvm.sh && bash install_nvm.sh
-
-# Install Node 
-RUN cd /home/dgreenbaum && . ~/.profile && nvm install v6.10.3
-
-# Install Spacemacs
-RUN git clone https://github.com/syl20bnr/spacemacs ~/.emacs.d
+ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
 
 ENTRYPOINT ["/bin/bash"]
-CMD ["--init-file", "/home/dgreenbaum/.profile"]
+#CMD ["--init-file", "/home/dgreenbaum/.profile"]
 
 # To start a shell from the command line:
 # docker run -ti -eDISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v/home/dgreenbaum/repos:/home/dgreenbaum/repos learningreact

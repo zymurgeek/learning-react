@@ -16,27 +16,20 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
     curl \
     git \
     libssl-dev \
+    nodejs \
     python \
     rsync \
     software-properties-common \
     wget \
   && rm -rf /var/lib/apt/lists/*
 
-ENV NVM_DIR /usr/local/nvm
-ENV NODE_VERSION v6.10.3
+EXPOSE 8080
 
-# Install nvm with node and npm
-RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.20.0/install.sh | bash \
-    && . $NVM_DIR/nvm.sh \
-    && nvm install $NODE_VERSION \
-    && nvm alias default $NODE_VERSION \
-    && nvm use default
+VOLUME /opt/app
 
-ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
-ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
+WORKDIR /opt/app
 
 ENTRYPOINT ["/bin/bash"]
 #CMD ["--init-file", "/home/dgreenbaum/.profile"]
 
-# To start a shell from the command line:
-# docker run -ti -eDISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v/home/dgreenbaum/repos:/home/dgreenbaum/repos learningreact
+# To start a shell from the command line, run the script dockerrun
